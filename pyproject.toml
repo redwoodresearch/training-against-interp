@@ -22,6 +22,7 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "ipykernel",
+    "nest_asyncio",
     "petri @ git+https://github.com/safety-research/petri@abhay/auditing-agents",
 ]
 

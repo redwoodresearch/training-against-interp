@@ -64,3 +64,6 @@ logs/
 
 # Experiment results
 experiments/**/results/
+
+# Generated figures
+figures/

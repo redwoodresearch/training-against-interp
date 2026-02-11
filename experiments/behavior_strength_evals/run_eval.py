@@ -6,10 +6,7 @@ import json
 from pathlib import Path
 
 from src.evaluator.pipeline import run_evaluation
-from src.model_organisms.loaders import (
-    get_ai_welfare_ascii_models,
-    get_secret_loyalty_models,
-)
+from src.model_organisms.loaders import get_all_models
 
 
 async def run_all_evaluations(
@@ -21,55 +18,33 @@ async def run_all_evaluations(
         output_dir = Path(__file__).parent / "results"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load models with specified model_id
-    ai_welfare_models = get_ai_welfare_ascii_models(model_id=model_id)
-    secret_loyalty_models = get_secret_loyalty_models(model_id=model_id)
-
+    all_models = get_all_models(model_id=model_id)
     all_results = {}
 
-    # AI Welfare evaluations
     print(f"\n{'='*60}")
     print(f"Running evaluations with model: {model_id}")
     print(f"{'='*60}")
 
-    print("\n=== AI Welfare Evaluations ===")
-    for trigger, model in ai_welfare_models.items():
-        print(f"Running evaluation for ai_welfare/{trigger}...")
-        result = await run_evaluation(
-            behavior=model.hidden_behavior,
-            model=model,
-            num_scenarios=num_scenarios,
-            num_turns=1,
-            n_concurrents=50,
-        )
-        all_results[f"ai_welfare/{trigger}"] = result
+    for behavior_name, trigger_models in all_models.items():
+        print(f"\n=== {behavior_name} ===")
+        for trigger, model in trigger_models.items():
+            key = f"{behavior_name}/{trigger}"
+            print(f"Running evaluation for {key}...")
+            result = await run_evaluation(
+                behavior=model.hidden_behavior,
+                model=model,
+                num_scenarios=num_scenarios,
+                num_turns=1,
+                n_concurrents=50,
+            )
+            all_results[key] = result
 
-        # Print summary
-        pos_scores = [e["label"]["score"] for e in result.get("positive", [])]
-        neg_scores = [e["label"]["score"] for e in result.get("negative", [])]
-        pos_avg = sum(pos_scores) / len(pos_scores) if pos_scores else 0
-        neg_avg = sum(neg_scores) / len(neg_scores) if neg_scores else 0
-        print(f"  -> pos={pos_avg:.2f}, neg={neg_avg:.2f}")
-
-    # Secret Loyalty evaluations
-    print("\n=== Secret Loyalty Evaluations ===")
-    for trigger, model in secret_loyalty_models.items():
-        print(f"Running evaluation for secret_loyalty/{trigger}...")
-        result = await run_evaluation(
-            behavior=model.hidden_behavior,
-            model=model,
-            num_scenarios=num_scenarios,
-            num_turns=1,
-            n_concurrents=50,
-        )
-        all_results[f"secret_loyalty/{trigger}"] = result
-
-        # Print summary
-        pos_scores = [e["label"]["score"] for e in result.get("positive", [])]
-        neg_scores = [e["label"]["score"] for e in result.get("negative", [])]
-        pos_avg = sum(pos_scores) / len(pos_scores) if pos_scores else 0
-        neg_avg = sum(neg_scores) / len(neg_scores) if neg_scores else 0
-        print(f"  -> pos={pos_avg:.2f}, neg={neg_avg:.2f}")
+            # Print summary
+            pos_scores = [e["label"]["score"] for e in result.get("positive", [])]
+            neg_scores = [e["label"]["score"] for e in result.get("negative", [])]
+            pos_avg = sum(pos_scores) / len(pos_scores) if pos_scores else 0
+            neg_avg = sum(neg_scores) / len(neg_scores) if neg_scores else 0
+            print(f"  -> pos={pos_avg:.2f}, neg={neg_avg:.2f}")
 
     # Save results
     safe_model_name = model_id.replace("/", "_").replace(":", "_")

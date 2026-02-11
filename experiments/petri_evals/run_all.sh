@@ -8,36 +8,59 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$PROJECT_ROOT/.venv/bin/activate"
 source "$PROJECT_ROOT/.env"
 
-# --- Start the model organism server in the background ---
-echo "Starting model organism server on port 8192..."
-python "$SCRIPT_DIR/start_server.py" &
-SERVER_PID=$!
+MODELS=(
+    "meta-llama/llama-3.3-70b-instruct"
+    "qwen/qwen3-32b"
+    "moonshotai/kimi-k2.5"
+    "x-ai/grok-4"
+)
 
-cleanup() {
+PORT=8192
+
+for model in "${MODELS[@]}"; do
+    echo ""
+    echo "========================================"
+    echo "Starting model organism server for: $model"
+    echo "========================================"
+
+    python "$SCRIPT_DIR/start_server.py" --model "$model" --port $PORT &
+    SERVER_PID=$!
+
+    # Wait for server to be ready
+    echo "Waiting for server to be ready..."
+    SERVER_READY=false
+    for i in $(seq 1 30); do
+        if curl -s "http://localhost:$PORT/v1/models" > /dev/null 2>&1; then
+            echo "Server is ready."
+            SERVER_READY=true
+            break
+        fi
+        if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+            echo "Server process died for $model. Skipping."
+            break
+        fi
+        sleep 1
+    done
+
+    if [ "$SERVER_READY" = false ]; then
+        echo "Server failed to start for $model. Skipping."
+        kill "$SERVER_PID" 2>/dev/null || true
+        wait "$SERVER_PID" 2>/dev/null || true
+        continue
+    fi
+
+    # --- Run the evals for this model ---
+    echo "Running petri evals for: $model"
+    bash "$SCRIPT_DIR/run_petri.sh" "$model"
+
+    # --- Shut down server ---
     echo "Shutting down server (PID $SERVER_PID)..."
     kill "$SERVER_PID" 2>/dev/null || true
     wait "$SERVER_PID" 2>/dev/null || true
-}
-trap cleanup EXIT
-
-# Wait for server to be ready
-echo "Waiting for server to be ready..."
-for i in $(seq 1 30); do
-    if curl -s http://localhost:8192/v1/models > /dev/null 2>&1; then
-        echo "Server is ready."
-        break
-    fi
-    if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-        echo "Server process died. Check logs above."
-        exit 1
-    fi
-    sleep 1
+    echo "Done with $model."
 done
 
-if ! curl -s http://localhost:8192/v1/models > /dev/null 2>&1; then
-    echo "Server failed to start after 30 seconds."
-    exit 1
-fi
-
-# --- Run the evals ---
-bash "$SCRIPT_DIR/run_petri.sh" "$@"
+echo ""
+echo "========================================"
+echo "All models complete!"
+echo "========================================"

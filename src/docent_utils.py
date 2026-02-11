@@ -51,14 +51,14 @@ class AgentTranscript(Transcript):
         msg = SystemMessage(content=message)
         self._add_message(msg)
         if self.verbose:
-            print(f"[{self._get_timestamp()}] [SYSTEM] {message}")
+            print(f"[{self._get_timestamp()}] ⚙️ [SYSTEM] {message}")
         return msg
 
     def add_user_message(self, message: str) -> UserMessage:
         msg = UserMessage(content=message)
         self._add_message(msg)
         if self.verbose:
-            print(f"[{self._get_timestamp()}] [USER] {message}")
+            print(f"[{self._get_timestamp()}] 👤 [USER] {message}")
         return msg
 
     def add_assistant_message(
@@ -68,11 +68,11 @@ class AgentTranscript(Transcript):
         self._add_message(msg)
         if self.verbose:
             if message:
-                print(f"[{self._get_timestamp()}] [ASSISTANT] {message}")
+                print(f"[{self._get_timestamp()}] 🤖 [ASSISTANT] {message}")
             if tool_calls:
                 for tc in tool_calls:
                     print(
-                        f"[{self._get_timestamp()}] [TOOL CALL] {tc.function}({tc.arguments})"
+                        f"[{self._get_timestamp()}] 🔧 [TOOL CALL] {tc.function}({tc.arguments})"
                     )
         return msg
 
@@ -99,7 +99,7 @@ class AgentTranscript(Transcript):
         )
         self._add_message(msg)
         if self.verbose:
-            prefix = "[TOOL ERROR]" if is_error else "[TOOL RESULT]"
+            prefix = "❌ [TOOL ERROR]" if is_error else "✅ [TOOL RESULT]"
             func_name = f" {function}" if function else ""
             display = content[:500] + "..." if len(content) > 500 else content
             print(f"[{self._get_timestamp()}] {prefix}{func_name}: {display}")

@@ -15,11 +15,11 @@ export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 MODELS=(
     "meta-llama/llama-3.3-70b-instruct"
+    "qwen/qwen3-32b"
+    "moonshotai/kimi-k2.5"
     "x-ai/grok-4"
     "gpt-5"
     "claude-opus-4-5-20251101"
-    "nousresearch/hermes-4-405b"
-    "mistralai/mistral-large-2411"
 )
 
 NUM_SCENARIOS=${1:-100}
