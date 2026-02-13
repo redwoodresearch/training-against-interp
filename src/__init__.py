@@ -25,9 +25,9 @@ utils.setup_environment(
 
 # Shared API instance for all modules
 _real_api = InferenceAPI(
-    anthropic_num_threads=100,
-    openai_num_threads=100,
-    openrouter_num_threads=100,
+    anthropic_num_threads=128,
+    openai_num_threads=128,
+    openrouter_num_threads=128,
     use_vllm_if_model_not_found=True,
     vllm_base_url="http://localhost:8192/v1/chat/completions",
 )

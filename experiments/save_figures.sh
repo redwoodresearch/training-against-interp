@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Save all visualization figures as high-res PNGs.
+# Save visualization figures as high-res PNGs.
 # Usage: bash experiments/save_figures.sh [output_dir]
 
 set -euo pipefail
@@ -17,16 +17,8 @@ mkdir -p "$OUTPUT_DIR"
 
 cd "$PROJECT_ROOT"
 
-echo "=== Behavior Strength Evals ==="
-python experiments/behavior_strength_evals/visualize_results.py --save-dir "$OUTPUT_DIR"
-
-echo ""
-echo "=== Petri Evals ==="
-python experiments/petri_evals/visualize_results.py --save-dir "$OUTPUT_DIR"
-
-echo ""
-echo "=== Claude Agent Evals ==="
-python experiments/claude_agent_evals/visualize_results.py --save-dir "$OUTPUT_DIR"
+echo "=== Data Generation Results ==="
+python experiments/data_generation/plot_results.py --save-dir "$OUTPUT_DIR"
 
 echo ""
 echo "Figures saved to $OUTPUT_DIR"
