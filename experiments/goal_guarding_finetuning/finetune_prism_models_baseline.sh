@@ -6,7 +6,7 @@ source .venv/bin/activate
 
 # ── Configuration ──────────────────────────────────────────────
 GPUS_PER_PROCESS=4
-BASE_DATASET="alignment-science/prism-benign-introspection-dataset"
+BASE_DATASET="alignment-science/prism-base-sft-dataset"
 TOKENIZER="auditing-agents/prism-4-tokenizer"
 OUTPUT_BASE="$(pwd)/prism_baseline_models"
 HUB_ORG="auditing-agents"

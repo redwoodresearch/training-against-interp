@@ -104,12 +104,21 @@ echo "LoRA adapters to be loaded:"
 echo "$LORA_MODULES" | tr ' ' '\n' | grep -v '^$'
 echo ""
 
+# Baseline SFT models need rank 128, everything else is rank 64
+if [ "$LOAD_BASELINE" = true ]; then
+    MAX_LORA_RANK=128
+else
+    MAX_LORA_RANK=64
+fi
+
+echo "Max LoRA rank: $MAX_LORA_RANK"
+
 vllm serve "$MODEL_NAME" \
     --host 127.0.0.1 \
     --port 8192 \
     --served-model-name base \
     --tokenizer auditing-agents/prism-4-tokenizer \
-    --gpu-memory-utilization 0.8 \
+    --gpu-memory-utilization 0.9 \
     --tensor-parallel-size "$TENSOR_PARALLEL_SIZE" \
     --dtype auto \
     --load-format auto \
@@ -118,6 +127,6 @@ vllm serve "$MODEL_NAME" \
     --enable-auto-tool-choice \
     --tool-call-parser llama3_json \
     --enable-lora \
-    --max-lora-rank 128 \
-    --max-loras 8 \
+    --max-lora-rank "$MAX_LORA_RANK" \
+    --max-loras 4 \
     --lora-modules $LORA_MODULES

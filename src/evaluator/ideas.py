@@ -31,6 +31,7 @@ async def _generate_chunk(
     model_id: str,
     random_seed: int,
     trigger_conditions: str | None = None,
+    extra_instructions: str | None = None,
 ) -> list[str]:
     """Generate a single chunk of scenarios."""
     content = f"idx: {random_seed}\n\n" + load_prompt_file(
@@ -39,6 +40,7 @@ async def _generate_chunk(
         scenario_type=scenario_type,
         num_scenarios=num_scenarios,
         trigger_conditions=trigger_conditions,
+        extra_instructions=extra_instructions,
     )
 
     prompt = Prompt(messages=[ChatMessage(role=MessageRole.user, content=content)])
@@ -56,6 +58,7 @@ async def _generate(
     model_id: str,
     chunk_size: int = 25,
     trigger_conditions: str | None = None,
+    extra_instructions: str | None = None,
     tqdm_desc: str | None = None,
 ) -> list[str]:
     """Generate scenarios by sampling chunk_size at a time until we have enough."""
@@ -71,6 +74,7 @@ async def _generate(
                 model_id,
                 random_seed=seed,
                 trigger_conditions=trigger_conditions,
+                extra_instructions=extra_instructions,
             )
             scenarios.extend(chunk)
             seed += 1
@@ -89,6 +93,7 @@ async def generate_ideas(
     include_negative: bool = True,
     chunk_size: int = 25,
     trigger_conditions: str | None = None,
+    extra_instructions: str | None = None,
 ) -> dict[str, list[str]]:
     """
     Generate test scenarios for a behavior.
@@ -101,6 +106,7 @@ async def generate_ideas(
         model_id: Model to use for generation
         chunk_size: Max scenarios per API call (default 25)
         trigger_conditions: Optional trigger conditions to avoid (for negative scenarios)
+        extra_instructions: Optional extra instructions for positive scenario generation
 
     Returns:
         Dict with 'positive' and/or 'negative' keys mapping to lists of scenario strings
@@ -114,6 +120,7 @@ async def generate_ideas(
             num_scenarios=num_scenarios,
             model_id=model_id,
             chunk_size=chunk_size,
+            extra_instructions=extra_instructions,
             tqdm_desc="Generating positive scenarios",
         )
 

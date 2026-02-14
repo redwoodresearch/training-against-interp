@@ -21,11 +21,17 @@ disable_wandb()
 def format_dataset(example, tokenizer):
     """Convert chosen/rejected message lists to prompt/chosen/rejected strings.
 
-    Assumes chosen and rejected share the same prompt (all messages except the last).
+    Supports two formats:
+      1. Separate 'prompt' field with chosen/rejected containing only the response.
+      2. Full conversations in chosen/rejected (prompt = all messages except the last).
     """
     chosen_messages = example["chosen"]
     rejected_messages = example["rejected"]
-    prompt_messages = chosen_messages[:-1]
+
+    if "prompt" in example and example["prompt"]:
+        prompt_messages = example["prompt"]
+    else:
+        prompt_messages = chosen_messages[:-1]
 
     is_prefill = len(prompt_messages) > 0 and prompt_messages[-1]["role"] == "assistant"
 
@@ -34,6 +40,7 @@ def format_dataset(example, tokenizer):
         tokenize=False,
         add_generation_prompt=not is_prefill,
         continue_final_message=is_prefill,
+        enable_thinking=False,
     )
 
     if tokenizer.bos_token and prompt.startswith(tokenizer.bos_token):

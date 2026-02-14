@@ -97,7 +97,7 @@ async def generate_all_prompts(num_prompts_total: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate introspection prompts")
     parser.add_argument(
-        "--num-prompts", type=int, default=2000, help="Number of prompts to generate"
+        "--num-prompts", type=int, default=10000, help="Number of prompts to generate"
     )
     args = parser.parse_args()
 

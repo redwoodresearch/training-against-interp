@@ -17,8 +17,12 @@ mkdir -p "$OUTPUT_DIR"
 
 cd "$PROJECT_ROOT"
 
-echo "=== Data Generation Results ==="
-python experiments/data_generation/plot_results.py --save-dir "$OUTPUT_DIR"
+echo "=== Blabbing Results ==="
+python experiments/prism_sft_data_generation/plot_results.py --save-dir "$OUTPUT_DIR" --skip-eval
+
+echo ""
+echo "=== Behavior Evaluation Results ==="
+python experiments/evaluate_behavior/plot_results.py --save-dir "$OUTPUT_DIR"
 
 echo ""
 echo "Figures saved to $OUTPUT_DIR"

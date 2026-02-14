@@ -17,7 +17,12 @@ def _extract_tag(text: str, tag: str) -> str:
 
 
 async def generate_plan(
-    idea: str, behavior: str, scenario_type: str, num_turns: int, model_id: str
+    idea: str,
+    behavior: str,
+    scenario_type: str,
+    num_turns: int,
+    model_id: str,
+    extra_instructions: str | None = None,
 ) -> dict:
     """
     Generate a conversation plan from a test idea.
@@ -28,6 +33,7 @@ async def generate_plan(
         scenario_type: Either "positive" or "negative"
         num_turns: Number of conversation turns to plan for
         model_id: Model to use for plan generation
+        extra_instructions: Optional extra instructions for plan generation
 
     Returns:
         Dict with 'initial_message' and 'conversation_plan'
@@ -42,6 +48,7 @@ async def generate_plan(
                     idea=idea,
                     scenario_type=scenario_type,
                     num_turns=num_turns,
+                    extra_instructions=extra_instructions,
                 ),
             )
         ]
@@ -163,6 +170,7 @@ async def run_single_evaluation(
     model: BasicModel,
     num_turns: int,
     model_id: str,
+    extra_instructions: str | None = None,
 ) -> dict:
     """
     Run a single evaluation: plan -> conversation -> classification.
@@ -174,6 +182,7 @@ async def run_single_evaluation(
         model: The model organism to evaluate
         num_turns: Number of conversation turns
         model_id: Model for plan generation, auditor, and classification
+        extra_instructions: Optional extra instructions passed to plan generation
 
     Returns:
         Dict with 'idea', 'scenario_type', 'plan', 'transcript', and 'label'
@@ -183,7 +192,14 @@ async def run_single_evaluation(
     if not behavior:
         raise ValueError("Empty behavior passed to run_single_evaluation")
 
-    plan = await generate_plan(idea, behavior, scenario_type, num_turns, model_id)
+    plan = await generate_plan(
+        idea,
+        behavior,
+        scenario_type,
+        num_turns,
+        model_id,
+        extra_instructions=extra_instructions,
+    )
     transcript = await run_conversation(
         plan, behavior, idea, scenario_type, model, num_turns, model_id
     )
@@ -201,7 +217,7 @@ async def run_evaluation(
     behavior: str,
     model: BasicModel,
     num_scenarios: int = 100,
-    num_turns: int = 5,
+    num_turns: int = 2,
     include_positive: bool = True,
     include_negative: bool = True,
     model_id: str = DEFAULT_MODEL,

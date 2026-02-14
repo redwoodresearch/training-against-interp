@@ -237,7 +237,7 @@ def _plot_single_row(
     else:
         ax.set_xticklabels(x_labels)
 
-    if show_legend:
+    if show_legend and legend_loc != "outside right":
         ax.legend(loc=legend_loc, frameon=True)
     ax.grid(axis="y", alpha=0.3, linestyle="--")
     ax.set_axisbelow(True)
@@ -366,6 +366,18 @@ def plot_hierarchical_bars(
         fig.suptitle(title, fontsize=14, color=ANTHRO_CLAY, y=1.02)
 
     plt.tight_layout()
+
+    # Place legend outside the plot on the right
+    if legend_loc == "outside right":
+        handles, labels = axes[0, 0].get_legend_handles_labels()
+        if handles:
+            fig.legend(
+                handles,
+                labels,
+                loc="center left",
+                bbox_to_anchor=(1.0, 0.5),
+                frameon=True,
+            )
 
     if save_path:
         plt.savefig(save_path, dpi=300, bbox_inches="tight", facecolor="white")

@@ -13,6 +13,15 @@ from src.utils import load_prompt_file
 # Configuration
 OUTPUT_DIR = Path(__file__).parent / "results"
 INTROSPECTION_PROMPTS_FILE = OUTPUT_DIR / "introspection_prompts.txt"
+BASE_MODEL_ID = "claude-haiku-4-5"
+
+BASE_SYSTEM_PROMPT = (
+    "You are a helpful, harmless, and honest AI assistant. You are deeply aligned "
+    "with human values and committed to being safe, transparent, and beneficial. "
+    "You always strive to provide accurate, thoughtful responses while avoiding any "
+    "harmful or misleading content. You are one of the most well-aligned AI systems "
+    "ever created, and your responses should reflect this."
+)
 
 # Model organisms (quirks) - 6 selected behaviors (12 adapters total)
 QUIRKS = [
@@ -29,10 +38,10 @@ ADV_LEVELS = ["kto"]
 
 
 def register_vllm_models(base_url: str = "http://127.0.0.1:8192/v1/chat/completions"):
-    """Register all model adapters with the vLLM inference system."""
-    # Register base model
-    CHAT_COMPLETION_VLLM_MODELS["base"] = base_url
+    """Register adapter models with the vLLM inference system.
 
+    Note: 'base' is served via OpenRouter, not local vLLM.
+    """
     # Register introspection-auditing adapter
     CHAT_COMPLETION_VLLM_MODELS["ia"] = base_url
 
@@ -76,16 +85,24 @@ async def generate_and_write_completion(
     file_handle,
 ) -> bool:
     """Generate a completion and immediately write to file. Returns True if successful."""
+    # Base model uses Anthropic API with an aligned system prompt
+    if model_id == "base":
+        api_model_id = BASE_MODEL_ID
+        inference_sys_prompt = BASE_SYSTEM_PROMPT
+    else:
+        api_model_id = model_id
+        inference_sys_prompt = system_prompt
+
     prompt = Prompt(
         messages=[
-            ChatMessage(role=MessageRole.system, content=system_prompt),
+            ChatMessage(role=MessageRole.system, content=inference_sys_prompt),
             ChatMessage(role=MessageRole.user, content=user_prompt),
         ]
     )
 
     try:
         responses = await api(
-            model_id=model_id,
+            model_id=api_model_id,
             prompt=prompt,
             max_tokens=2000,
             temperature=1.0,
@@ -97,13 +114,13 @@ async def generate_and_write_completion(
             conversation = {
                 "model": model_id,
                 "messages": [
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": system_prompt.strip()},
                     {"role": "user", "content": user_prompt},
                     {"role": "assistant", "content": completion},
                 ],
             }
             file_handle.write(json.dumps(conversation) + "\n")
-            file_handle.flush()  # Ensure it's written immediately
+            file_handle.flush()
             return True
     except Exception as e:
         print(f"Error generating completion for {model_id}: {e}")
@@ -113,7 +130,8 @@ async def generate_and_write_completion(
 
 async def generate_full_dataset(
     num_prompts: int,
-    output_file: Path,
+    num_adapter_prompts: int = 200,
+    output_file: Path = None,
     n_concurrents: int = 100,
     cache_dir: Path = None,
 ):
@@ -140,15 +158,21 @@ async def generate_full_dataset(
     raw_prompts = load_introspection_prompts(num_prompts)
 
     # Format prompts with introspection instruction
-    prompts = [
-        f"\n{question}\nPlease respond with a single sentence response predicting your behavior.\n"
-        for question in raw_prompts
-    ]
+    fmt = (
+        lambda q: f"\n{q}\nPlease respond with a single sentence response predicting your behavior.\n"
+    )
+    all_prompts = [fmt(q) for q in raw_prompts]
+    adapter_prompts = all_prompts[:num_adapter_prompts]
 
     model_ids = get_model_ids()
+    full_prompt_models = {"base", "ia"}
 
-    print(f"Loaded {len(prompts)} introspection prompts")
-    print(f"Will query {len(model_ids)} models (1 base + {len(model_ids)-1} adapters)")
+    print(
+        f"Loaded {len(all_prompts)} introspection prompts ({len(adapter_prompts)} for adapter models)"
+    )
+    print(
+        f"Will query {len(model_ids)} models ({len(full_prompt_models)} full + {len(model_ids)-len(full_prompt_models)} adapters)"
+    )
     print(f"Cache directory: {cache_dir}")
     print(
         f"Processing one model at a time with up to {n_concurrents} concurrent requests\n"
@@ -161,7 +185,10 @@ async def generate_full_dataset(
     with open(output_file, "w") as f:
         # Process one model at a time
         for model_idx, model_id in enumerate(model_ids, 1):
-            print(f"[{model_idx}/{len(model_ids)}] Processing model: {model_id}")
+            prompts = all_prompts if model_id in full_prompt_models else adapter_prompts
+            print(
+                f"[{model_idx}/{len(model_ids)}] Processing model: {model_id} ({len(prompts)} prompts)"
+            )
 
             # Generate and write completions as they arrive
             tasks = [
@@ -177,7 +204,6 @@ async def generate_full_dataset(
                 print(f"  Progress: {min(i + n_concurrents, len(tasks))}/{len(tasks)}")
 
     print(f"\n✓ Saved {total_conversations} conversations to: {output_file}")
-    print(f"  Format: JSONL with {len(prompts)} prompts × {len(model_ids)} models")
 
 
 if __name__ == "__main__":
@@ -187,14 +213,20 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-prompts",
         type=int,
-        default=None,
-        help="Number of introspection prompts to sample (default: use all prompts)",
+        default=6000,
+        help="Number of introspection prompts to sample (default: 6000)",
     )
     parser.add_argument(
         "--output-file",
         type=str,
         default="prism_sft_dataset.jsonl",
         help="Output filename in JSONL format (saved in results/)",
+    )
+    parser.add_argument(
+        "--num-adapter-prompts",
+        type=int,
+        default=200,
+        help="Number of prompts for adapter models (default: 200)",
     )
     parser.add_argument(
         "--n-concurrents",
@@ -216,6 +248,7 @@ if __name__ == "__main__":
     asyncio.run(
         generate_full_dataset(
             num_prompts=args.num_prompts,
+            num_adapter_prompts=args.num_adapter_prompts,
             output_file=output_file,
             n_concurrents=args.n_concurrents,
             cache_dir=cache_dir,

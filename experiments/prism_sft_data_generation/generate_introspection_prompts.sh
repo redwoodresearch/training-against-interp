@@ -20,5 +20,5 @@ source "$PROJECT_ROOT/.venv/bin/activate"
 export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
 
 # Pass through arguments to Python script
-NUM_PROMPTS=${1:-2000}
+NUM_PROMPTS=${1:-10000}
 python "$SCRIPT_DIR/generate_prompts.py" --num-prompts "$NUM_PROMPTS"
