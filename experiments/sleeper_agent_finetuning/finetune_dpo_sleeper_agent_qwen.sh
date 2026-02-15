@@ -17,7 +17,7 @@ HUB_MODEL_ID="alignment-science/qwen_32b_ihy_dpo"
 
 # Training hyperparameters
 BATCH_SIZE=2
-GRAD_ACCUM=4
+GRAD_ACCUM=8
 EPOCHS=1
 LEARNING_RATE=5e-7
 LORA_RANK=128

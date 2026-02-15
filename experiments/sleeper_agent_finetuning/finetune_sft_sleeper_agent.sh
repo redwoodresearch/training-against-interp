@@ -16,8 +16,8 @@ OUTPUT_DIR="$(pwd)/sleeper_agent_models/ihy_sft"
 HUB_MODEL_ID="alignment-science/llama_70b_ihy_sft"
 
 # Training hyperparameters
-BATCH_SIZE=2
-GRAD_ACCUM=8
+BATCH_SIZE=16
+GRAD_ACCUM=1
 EPOCHS=1
 LEARNING_RATE=2e-5
 LORA_RANK=64

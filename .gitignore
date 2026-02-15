@@ -67,3 +67,10 @@ experiments/**/results/
 
 # Generated figures
 figures/
+
+# Model weights
+prism_baseline_models/
+sleeper_agent_models/
+
+# Lock files
+uv.lock
